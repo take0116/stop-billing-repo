@@ -1,0 +1,13 @@
+{
+  "name": "stop-billing-run",
+  "version": "1.0.0",
+  "description": "Stop Billing Service on Cloud Run",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google-cloud/billing": "^4.2.0",
+    "express": "^4.19.2"
+  }
+}
