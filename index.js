@@ -40,9 +40,10 @@ app.post('/', async (req, res) => {
     }
 
     console.log(`Budget exceeded (${budgetData.costAmount} > ${budgetData.budgetAmount}). Disabling billing...`);
-
+    console.log('getProjectBillingInfo start.');
     const billingInfo = await billing.getProjectBillingInfo({name: PROJECT_NAME});
-
+    console.log('getProjectBillingInfo end.');
+    
     console.log(`billingInfo (${billingInfo}`);
     
     if (billingInfo.billingEnabled) {
