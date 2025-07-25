@@ -1,12 +1,9 @@
 const express = require('express');
-const cors = require('cors'); // ★ この行を追加
+const cors = require('cors');
 const app = express();
 const {CloudBillingClient} = require('@google-cloud/billing').v1;
 
-// ★ この行を追加: CORSミドルウェアを適用する
 app.use(cors({ origin: true }));
-
-// ↓↓ これ以降のコードは変更ありません ↓↓
 
 const PROJECT_ID = process.env.GCP_PROJECT || 'GCP_PROJECT environment variable is not set.';
 const PROJECT_NAME = `projects/${PROJECT_ID}`;
@@ -29,7 +26,7 @@ app.post('/', async (req, res) => {
       res.status(400).send('Invalid Pub/Sub message format');
       return;
     }
-
+    
     const pubsubMessage = req.body.message;
     const budgetData = JSON.parse(
       Buffer.from(pubsubMessage.data, 'base64').toString()
@@ -45,11 +42,13 @@ app.post('/', async (req, res) => {
     console.log(`Budget exceeded (${budgetData.costAmount} > ${budgetData.budgetAmount}). Disabling billing...`);
 
     const billingInfo = await billing.getProjectBillingInfo({name: PROJECT_NAME});
-
+    
     if (billingInfo.billingEnabled) {
+      // ★★★ ここが最後の修正点です ★★★
+      // 空文字 '' ではなく null を設定するのが正しい方法でした。
       await billing.updateProjectBillingInfo({
         name: PROJECT_NAME,
-        projectBillingInfo: {billingAccountName: ''},
+        projectBillingInfo: {billingAccountName: null}, 
       });
       console.log('Billing disabled successfully.');
       res.status(200).send('Billing disabled.');
