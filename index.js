@@ -2,11 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const {CloudBillingClient} = require('@google-cloud/billing').v1;
+const {GoogleAuth} = require('google-auth-library'); // ★ プロジェクトID取得のために追加
 
 app.use(cors({ origin: true }));
 
-const PROJECT_ID = process.env.GCP_PROJECT || 'GCP_PROJECT environment variable is not set.';
-const PROJECT_NAME = `projects/${PROJECT_ID}`;
 let billing;
 try {
   billing = new CloudBillingClient();
@@ -41,14 +40,18 @@ app.post('/', async (req, res) => {
 
     console.log(`Budget exceeded (${budgetData.costAmount} > ${budgetData.budgetAmount}). Disabling billing...`);
     
-    // ★★★ ここでPROJECT_NAMEの中身を確認します ★★★
-    console.log(`--- Calling getProjectBillingInfo with name: [${PROJECT_NAME}] ---`);
+    const auth = new GoogleAuth({
+        scopes: 'https://www.googleapis.com/auth/cloud-billing',
+    });
+    const projectId = await auth.getProjectId();
+    const projectName = `projects/${projectId}`;
+    console.log(`Successfully fetched project name: [${projectName}]`);
 
-    const [billingInfo] = await billing.getProjectBillingInfo({name: PROJECT_NAME});
+    const [billingInfo] = await billing.getProjectBillingInfo({name: projectName});
     
     if (billingInfo.billingEnabled) {
       const payloadToSend = {
-        name: PROJECT_NAME,
+        name: projectName,
         projectBillingInfo: { billingAccountName: null },
       };
       
