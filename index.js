@@ -26,7 +26,7 @@ app.post('/', async (req, res) => {
       res.status(400).send('Invalid Pub/Sub message format');
       return;
     }
-
+    
     const pubsubMessage = req.body.message;
     const budgetData = JSON.parse(
       Buffer.from(pubsubMessage.data, 'base64').toString()
@@ -40,25 +40,19 @@ app.post('/', async (req, res) => {
     }
 
     console.log(`Budget exceeded (${budgetData.costAmount} > ${budgetData.budgetAmount}). Disabling billing...`);
-    console.log('getProjectBillingInfo start.');
-    const billingInfo = await billing.getProjectBillingInfo({name: PROJECT_NAME});
-    console.log('getProjectBillingInfo end.');
     
-    console.log(`billingInfo (${billingInfo}`);
+    // ★★★ ここでPROJECT_NAMEの中身を確認します ★★★
+    console.log(`--- Calling getProjectBillingInfo with name: [${PROJECT_NAME}] ---`);
+
+    const [billingInfo] = await billing.getProjectBillingInfo({name: PROJECT_NAME});
     
     if (billingInfo.billingEnabled) {
-      // ★★★ ここからデバッグコードを追加 ★★★
       const payloadToSend = {
         name: PROJECT_NAME,
         projectBillingInfo: { billingAccountName: null },
       };
-
-      console.log('--- Attempting to update billing info with payload: ---');
-      console.log(JSON.stringify(payloadToSend, null, 2));
-      console.log('----------------------------------------------------');
-
+      
       await billing.updateProjectBillingInfo(payloadToSend);
-      // ★★★ ここまでデバッグコードを追加 ★★★
 
       console.log('Billing disabled successfully.');
       res.status(200).send('Billing disabled.');
