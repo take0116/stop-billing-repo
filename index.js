@@ -1,6 +1,12 @@
 const express = require('express');
+const cors = require('cors'); // ★ この行を追加
 const app = express();
 const {CloudBillingClient} = require('@google-cloud/billing').v1;
+
+// ★ この行を追加: CORSミドルウェアを適用する
+app.use(cors({ origin: true }));
+
+// ↓↓ これ以降のコードは変更ありません ↓↓
 
 const PROJECT_ID = process.env.GCP_PROJECT || 'GCP_PROJECT environment variable is not set.';
 const PROJECT_NAME = `projects/${PROJECT_ID}`;
@@ -9,15 +15,13 @@ try {
   billing = new CloudBillingClient();
 } catch (e) {
     console.error('Failed to initialize CloudBillingClient:', e);
-    // クライアントの初期化に失敗した場合、サーバーを起動せずに終了
     process.exit(1);
 }
-
 
 app.use(express.json());
 
 app.post('/', async (req, res) => {
-  console.log('Request received, processing...'); // リクエスト処理開始のログ
+  console.log('Request received, processing...');
 
   try {
     if (!req.body || !req.body.message) {
@@ -25,7 +29,7 @@ app.post('/', async (req, res) => {
       res.status(400).send('Invalid Pub/Sub message format');
       return;
     }
-    
+
     const pubsubMessage = req.body.message;
     const budgetData = JSON.parse(
       Buffer.from(pubsubMessage.data, 'base64').toString()
@@ -41,7 +45,7 @@ app.post('/', async (req, res) => {
     console.log(`Budget exceeded (${budgetData.costAmount} > ${budgetData.budgetAmount}). Disabling billing...`);
 
     const billingInfo = await billing.getProjectBillingInfo({name: PROJECT_NAME});
-    
+
     if (billingInfo.billingEnabled) {
       await billing.updateProjectBillingInfo({
         name: PROJECT_NAME,
@@ -54,7 +58,6 @@ app.post('/', async (req, res) => {
       res.status(200).send('Billing already disabled.');
     }
   } catch (e) {
-    // ★★★ エラーをより詳しくログに出力するよう修正 ★★★
     console.error('!!! An unhandled error occurred in the request handler !!!');
     console.error('Error Message:', e.message);
     console.error('Error Stack:', e.stack);
