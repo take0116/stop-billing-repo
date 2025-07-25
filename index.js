@@ -26,7 +26,7 @@ app.post('/', async (req, res) => {
       res.status(400).send('Invalid Pub/Sub message format');
       return;
     }
-    
+
     const pubsubMessage = req.body.message;
     const budgetData = JSON.parse(
       Buffer.from(pubsubMessage.data, 'base64').toString()
@@ -42,14 +42,21 @@ app.post('/', async (req, res) => {
     console.log(`Budget exceeded (${budgetData.costAmount} > ${budgetData.budgetAmount}). Disabling billing...`);
 
     const billingInfo = await billing.getProjectBillingInfo({name: PROJECT_NAME});
-    
+
     if (billingInfo.billingEnabled) {
-      // ★★★ ここが最後の修正点です ★★★
-      // 空文字 '' ではなく null を設定するのが正しい方法でした。
-      await billing.updateProjectBillingInfo({
+      // ★★★ ここからデバッグコードを追加 ★★★
+      const payloadToSend = {
         name: PROJECT_NAME,
-        projectBillingInfo: {billingAccountName: null}, 
-      });
+        projectBillingInfo: { billingAccountName: null },
+      };
+
+      console.log('--- Attempting to update billing info with payload: ---');
+      console.log(JSON.stringify(payloadToSend, null, 2));
+      console.log('----------------------------------------------------');
+
+      await billing.updateProjectBillingInfo(payloadToSend);
+      // ★★★ ここまでデバッグコードを追加 ★★★
+
       console.log('Billing disabled successfully.');
       res.status(200).send('Billing disabled.');
     } else {
