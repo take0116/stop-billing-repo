@@ -43,6 +43,8 @@ app.post('/', async (req, res) => {
 
     const billingInfo = await billing.getProjectBillingInfo({name: PROJECT_NAME});
 
+    console.log(`billingInfo (${billingInfo}`);
+    
     if (billingInfo.billingEnabled) {
       // ★★★ ここからデバッグコードを追加 ★★★
       const payloadToSend = {
